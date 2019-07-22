@@ -11,7 +11,7 @@ DIR = 'Raw/'
 def clone(data, *keys):
 	return { key: data[key] for key in keys }
 
-def filter(file, infile, outfile):
+def filter(file, infile, outfile, md5file):
 	lineno = 0
 	for line in infile:
 		if '\x00' in line:
@@ -27,11 +27,12 @@ def filter(file, infile, outfile):
 			obj['line'] = lineno
 			json.dump(obj, outfile)
 			outfile.write('\n')
+			md5file.write(data['md5'] + '  ' + file + '\n')
 		lineno += 1
 	return lineno
 
 lens = dict()
-with io.open('ransomware.jsons', 'wb') as ransom:
+with io.open('ransomware.jsons', 'wb') as ransom, io.open('ransomware.md5', 'wb') as md5:
 	for file in sorted(os.listdir(DIR)):
 		with gzip.open(DIR + file, 'rb') as tgz:
 			# the Raw dataset files are single-element tar.gz files, which is a bit
@@ -44,7 +45,7 @@ with io.open('ransomware.jsons', 'wb') as ransom:
 			tar_header = tgz.read(512)
 			if len(tar_header) != 512:
 				raise Exception('cannot skip the TAR header?')
-			lens[file] = filter(file, tgz, ransom)
+			lens[file] = filter(file, tgz, ransom, md5)
 			print file, lens[file]
 with io.open('filelengths.json', 'wb') as lengths:
 	json.dump(lens, lengths)
