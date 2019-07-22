@@ -3,6 +3,9 @@ import io
 import gzip
 import json
 
+# directory containing (compressed) downloaded files from
+# https://drive.google.com/drive/folders/1oKr5hP8Dlz1QABUOX-HKi2n8tyRkbaDN
+# that's 19GB compressed / 200GB uncompressed; this script runs about 30min.
 DIR = 'Raw/'
 
 def clone(data, *keys):
@@ -29,7 +32,7 @@ def filter(file, infile, outfile):
 
 lens = dict()
 with io.open('ransomware.jsons', 'wb') as ransom:
-	for file in os.listdir(DIR):
+	for file in sorted(os.listdir(DIR)):
 		with gzip.open(DIR + file, 'rb') as tgz:
 			# the Raw dataset files are single-element tar.gz files, which is a bit
 			# silly. however, since all tars are single-element, so we can just strip
