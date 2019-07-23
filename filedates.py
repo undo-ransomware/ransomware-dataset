@@ -37,7 +37,7 @@ with io.open('ransomware.md5', 'rb') as infile:
 		file = line[34:].rstrip()
 		if file not in samples:
 			samples[file] = FileStats()
-		if hash in dates:
+		if hash in dates and dates[hash] is not None:
 			samples[file].add(hash, dates[hash])
 for file in samples.keys():
 	samples[file].finalize()
