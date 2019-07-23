@@ -32,4 +32,4 @@ with io.open('ransomware.md5', 'rb') as infile:
 sys.stderr.write('\r' + str(index) + '\n')
 
 with io.open('sampledates.json', 'wb') as outfile:
-	outfile.write(json.dumps(dates))
+	json.dump(dates, outfile)
