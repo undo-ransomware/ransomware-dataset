@@ -19,11 +19,13 @@ popular-ransomware.pdf ransomware-family-distribution.pdf: ransomware.labels \
 sampledates.json: ransomware.md5 sampledates.py MetaInfo/
 	python sampledates.py
 
-filedates.pdf filedates.json: sampledates.json ransomware.md5 filedates.py
+filedates.pdf filedates.json: sampledates.json ransomware.md5 filedates.py \
+		filedates.r
 	python filedates.py
 
-dates.json: sampledates.json filedates.json ransomware.md5 merge.py
-	python merge.py
+dates.json familydates.pdf: sampledates.json filedates.json ransomware.md5 \
+		dates.py familydates.r
+	python dates.py
 
 todo.md5: sampledates.json sampledates.json filedates.json ransomware.md5 \
 		statsampler.py
