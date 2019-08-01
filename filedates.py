@@ -31,14 +31,15 @@ with io.open('sampledates.json', 'rb') as cache:
 	dates = json.load(cache)
 
 samples = dict()
-with io.open('ransomware.md5', 'rb') as infile:
-	for line in infile:
-		hash = line[0:32]
-		file = line[34:].rstrip()
-		if file not in samples:
-			samples[file] = FileStats()
-		if hash in dates and dates[hash] is not None:
-			samples[file].add(hash, dates[hash])
+for basename in ['ransomware', 'families']:
+	with io.open(basename + '.md5', 'rb') as infile:
+		for line in infile:
+			hash = line[0:32]
+			file = line[34:].rstrip()
+			if file not in samples:
+				samples[file] = FileStats()
+			if hash in dates and dates[hash] is not None:
+				samples[file].add(hash, dates[hash])
 for file in samples.keys():
 	samples[file].finalize()
 

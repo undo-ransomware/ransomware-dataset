@@ -1,13 +1,18 @@
 all: dates.json popular-ransomware.pdf
 
-ransomware.jsons filelengths.json: filter1.py Raw/ vxshare-filetypes/
-	python filter1.py
+ransomware/%.jsons.gz: filter1.py families.md Raw/%.ldjson.tar.gz \
+		vxshare-filetypes/%.zip.file.json.gz
+	python filter1.py $*
+
+ransomware.jsons: $(foreach id,$(wildcard Raw/*.ldjson.tar.gz), \
+		$(subst .ldjson.tar.gz,.jsons.gz,$(subst Raw/,ransomware/,$(id))))
+	python filter1combine.py >ransomware.jsons
 
 ransomware.labels: ransomware.jsons avclass/avclass_labeler.py
 	python avclass/avclass_labeler.py -vt ransomware.jsons >$@
 
 ransomware.md5: ransomware.labels ransomware.jsons
-	python filter2.py
+	python filter2.py ransomware
 
 popular-ransomware.pdf ransomware-family-distribution.pdf: ransomware.labels \
 		barplot.py
@@ -31,6 +36,7 @@ todo.md5: sampledates.json sampledates.json filedates.json ransomware.md5 \
 		statsampler.py
 	python statsampler.py 1440
 
-# together, these files take ~35min to build. ransomware.jsons is about 1.0GB.
+# these files take about a day to build. ransomware.jsons is about 1.0GB.
 # .PRECIOUS makes sure make doesn't accidentally delete them.
-.PRECIOUS: ransomware.jsons filelengths.json ransomware.labels ransomware.md5
+.PRECIOUS: ransomware/*.jsons.gz ransomware.jsons ransomware.labels \
+	families.md5 ransomware.md5

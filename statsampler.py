@@ -15,7 +15,7 @@ with io.open('filedates.json', 'rb') as cache:
 	stats = json.load(cache)
 
 unknown = dict()
-with io.open('ransomware.md5', 'rb') as infile:
+with io.open('families.md5', 'rb') as infile:
 	for line in infile:
 		hash = line[0:32]
 		file = line[34:].rstrip()

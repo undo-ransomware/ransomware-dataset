@@ -11,24 +11,25 @@ else:
 	dates = dict()
 
 index = 0
-with io.open('ransomware.md5', 'rb') as infile:
-	for line in infile:
-		hash = line[0:32]
-		if hash not in dates:
-			metafile ='MetaInfo/' + hash + '.json'
-			if os.path.isfile(metafile):
-				with open(metafile, 'r') as meta:
-					data = ast.literal_eval(meta.readline())
-					attrs = data['data']['attributes']
-					if 'first_submission_date' in attrs:
-						dates[hash] = int(attrs['first_submission_date'])
-					else:
-						dates[hash] = None
-	
-		index += 1
-		if index % 1000 == 0:
-			sys.stderr.write('\r' + str(index / 1000) + 'k  ')
-			sys.stderr.flush()
+for basename in ['ransomware', 'families']:
+	with io.open(basename + '.md5', 'rb') as infile:
+		for line in infile:
+			hash = line[0:32]
+			if hash not in dates:
+				metafile ='MetaInfo/' + hash + '.json'
+				if os.path.isfile(metafile):
+					with open(metafile, 'r') as meta:
+						data = ast.literal_eval(meta.readline())
+						attrs = data['data']['attributes']
+						if 'first_submission_date' in attrs:
+							dates[hash] = int(attrs['first_submission_date'])
+						else:
+							dates[hash] = None
+		
+			index += 1
+			if index % 1000 == 0:
+				sys.stderr.write('\r' + str(index / 1000) + 'k  ')
+				sys.stderr.flush()
 sys.stderr.write('\r' + str(index) + '\n')
 
 with io.open('sampledates.json', 'wb') as outfile:

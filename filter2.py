@@ -3,11 +3,16 @@ import io
 import json
 import sys
 
+if len(sys.argv) < 2:
+	sys.stderr.write('usage: python filter2.py basename\n')
+	sys.exit(1)
+basename = sys.argv[1]
+
 # ignore all SINGLETON samples. these are the ones for which not a single AV
 # engine has a non-generic name. rationale is that if it isn't important
 # enough to get a name, it never had any significant spread.
 recognized = set()
-with io.open('ransomware.labels', 'rb') as infile:
+with io.open(basename + '.labels', 'rb') as infile:
 	for line in infile:
 		hash = line[0:32]
 		family = line[33:].rstrip()
@@ -18,7 +23,7 @@ sys.stderr.write(str(len(recognized)) + ' non-singleton samples\n')
 # ransomware.md5 just lists the hashes, and sample source files. because it is
 # much smaller, processing it is orders of magnitude faster.
 sourcefile = dict()
-with io.open('ransomware.jsons', 'rb') as ransom, io.open('ransomware.md5', 'wb') as md5:
+with io.open(basename + '.jsons', 'rb') as ransom, io.open(basename + '.md5', 'wb') as md5:
 	index = 0
 	selected = 0
 	for line in ransom:

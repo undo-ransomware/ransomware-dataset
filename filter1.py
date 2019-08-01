@@ -1,5 +1,7 @@
 import os
 import io
+import re
+import sys
 import gzip
 import json
 
@@ -14,14 +16,13 @@ RAW = 'Raw/'
 # processing time 3-4min, dominated by JSON parsing.
 TYPES = 'vxshare-filetypes/'
 
-def clone(data, *keys):
-	return { key: data[key] for key in keys }
+def match(data, family_filters):
+	return [family for family, words in family_filters.items()
+			if all(word in data for word in words)]
 
-def filter(file, infile, outfile):
-	# pre-filter for PE executables. mostly meant to remove browser-based
-	# HTML ransom notices, which don't affect files (in a working browser).
+def scan_jsons(basename, family_filters):
 	peexe = set()
-	with gzip.open(TYPES + file + '.zip.file.json.gz', 'rb') as types:
+	with gzip.open(TYPES + basename + '.zip.file.json.gz', 'rb') as types:
 		for row in json.load(types):
 			if 'sig' not in row:
 				# there's a few (1260) entries missing the "file" results.
@@ -33,46 +34,77 @@ def filter(file, infile, outfile):
 					raise Exception('invalid sample name ' + f)
 				peexe.add(f[11:].rstrip())
 
-	lineno = 0
-	for line in infile:
-		if '\x00' in line:
-			break
-		# filter before parsing to avoid unnexessary parsing
-		if 'ransom' in line.lower():
+	with gzip.open(RAW + basename + '.ldjson.tar.gz', 'rb') as tgz:
+		# the Raw dataset files are single-element tar.gz files, which is a bit
+		# silly. however, since all tars are single-element, so we can just strip
+		# a single 512-byte tar header block and treat the rest of the file as
+		# ordinary text.
+		# since the files always end with a newline, tar's zero-padding of the
+		# last block appears as a line containing only NUL bytes, which won't
+		# match the "ransom" filter anyway.
+		tar_header = tgz.read(512)
+		if len(tar_header) != 512:
+			raise Exception('cannot skip the TAR header?')
+		for line in tgz:
+			if '\x00' in line:
+				break
+			line = line.lower()
+			# pre filter before parsing to avoid unnexessary parsing
+			if 'ransom' not in line and len(match(line, family_filters)) == 0:
+				continue
 			data = json.loads(line)
-			if data['md5'] in peexe:
-				obj = clone(data, 'md5', 'sha1', 'sha256')
-				obj['file'] = file
-				obj['line'] = lineno
-				# deliberately using the verbose format that avclass can read
-				obj['scans'] = { engine: clone(res, 'detected', 'result')
-						for engine, res in data['scans'].items() if res['detected'] }
-				obj['undetected'] = [engine
-						for engine, res in data['scans'].items() if not res['detected']]
-				json.dump(obj, outfile)
-				outfile.write('\n')
-		lineno += 1
-	return lineno
+			# pre-filter for PE executables. mostly meant to remove
+			# browser-based HTML ransom notices, which cannot affect files
+			# (in a working browser).
+			if data['md5'] not in peexe:
+				continue
+			yield data
 
-lens = dict()
-with io.open('ransomware.jsons', 'wb') as ransom:
-	for file in sorted(os.listdir(RAW)):
-		if not file.endswith('.ldjson.tar.gz'):
-			print file, '???'
+family_filters = dict()
+with io.open('families.md', 'rb') as families:
+	for line in families: # find the first table
+		if line.startswith('|---'):
+			break
+	for line in families:
+		if not line.startswith('|'):
+			break
+		family = line.split(r'|')[1].strip()
+		if '~~' not in family:
+			family_filters[family] = re.split('[ ./-]+', family.lower())
+
+if len(sys.argv) < 2:
+	sys.stderr.write('usage: python filter1.py basename\n')
+	sys.exit(1)
+basename = sys.argv[1]
+
+with gzip.open('ransomware/' + basename + '.tmp', 'wb') as ransomware:
+	# stream over the actual metadata files. they're too large to hold in
+	# memory.
+	for data in scan_jsons(basename, family_filters):
+		ransom = False
+		detections = dict()
+		families = set()
+		undetected = []
+		for engine, res in data['scans'].items():
+			if res['detected']:
+				result = res['result']
+				detections[engine] = result
+				families.update(match(result, family_filters))
+				ransom |= 'ransom' in result
+			else:
+				undetected.append(engine)
+		if not ransom or len(families) == 0:
+			# prefilter detected keywords that are in the same line, but
+			# not in the same engine's detection
 			continue
-		with gzip.open(RAW + file, 'rb') as tgz:
-			# the Raw dataset files are single-element tar.gz files, which is a bit
-			# silly. however, since all tars are single-element, so we can just strip
-			# a single 512-byte tar header block and treat the rest of the file as
-			# ordinary text.
-			# since the files always end with a newline, tar's zero-padding of the
-			# last block appears as a line containing only NUL bytes, which won't
-			# match the "ransom" filter anyway.
-			tar_header = tgz.read(512)
-			if len(tar_header) != 512:
-				raise Exception('cannot skip the TAR header?')
-			basename = file[:-14]
-			lens[basename] = filter(basename, tgz, ransom)
-			print basename, lens[basename]
-with io.open('filelengths.json', 'wb') as lengths:
-	json.dump(lens, lengths)
+
+		obj = { key: data[key] for key in ['md5', 'sha1', 'sha256'] }
+		obj['file'] = basename
+		# deliberately using the verbose format that avclass can read
+		obj['scans'] = { engine: { 'detected': True, 'result': res }
+				for engine, res in detections.items() }
+		obj['undetected'] = undetected
+		obj['families'] = list(families)
+		json.dump(obj, ransomware)
+		ransomware.write('\n')
+os.rename('ransomware/' + basename + '.tmp', 'ransomware/' + basename + '.jsons.gz')
