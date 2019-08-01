@@ -36,7 +36,7 @@ todo.md5: sampledates.json sampledates.json filedates.json ransomware.md5 \
 		statsampler.py
 	python statsampler.py 1440
 
-# these files take about a day to build. ransomware.jsons is about 1.0GB.
-# .PRECIOUS makes sure make doesn't accidentally delete them.
+# these files take about 1 hour to build. ransomware.jsons is about 3.5GB.
+# .PRECIOUS makes sure make doesn't accidentally delete any of them.
 .PRECIOUS: ransomware/*.jsons.gz ransomware.jsons ransomware.labels \
 	families.md5 ransomware.md5

@@ -36,7 +36,7 @@ def scan_jsons(basename, family_filters):
 
 	with gzip.open(RAW + basename + '.ldjson.tar.gz', 'rb') as tgz:
 		# the Raw dataset files are single-element tar.gz files, which is a bit
-		# silly. however, since all tars are single-element, so we can just strip
+		# silly. however, since all tars are single-element, we can just strip
 		# a single 512-byte tar header block and treat the rest of the file as
 		# ordinary text.
 		# since the files always end with a newline, tar's zero-padding of the
@@ -93,9 +93,9 @@ with gzip.open('ransomware/' + basename + '.tmp', 'wb') as ransomware:
 				ransom |= 'ransom' in result
 			else:
 				undetected.append(engine)
-		if not ransom or len(families) == 0:
-			# prefilter detected keywords that are in the same line, but
-			# not in the same engine's detection
+		if not ransom and len(families) == 0:
+			# happens for prefilter-detected keywords that are on the same
+			# line, but not in the same engine's detection result
 			continue
 
 		obj = { key: data[key] for key in ['md5', 'sha1', 'sha256'] }
