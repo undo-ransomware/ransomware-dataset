@@ -1,4 +1,4 @@
-all: dates.json ransomware-families.pdf
+all: dates.json ransomware-families.pdf familydates.pdf
 
 ransomware/%.jsons.gz: filter1.py families.md Raw/%.ldjson.tar.gz \
 		vxshare-filetypes/%.zip.file.json.gz
@@ -19,7 +19,7 @@ ransomware-families.pdf: samples.json barplot.py
 
 # deliberately using the MetaInfo directory itself as prerequisite. declaring
 # all files takes almost 1min just for make to list the files. directory mtime
-# changes whenever a file is added, and files are never modified anyway.
+# changes whenever a file is added, and these files are never modified anyway.
 sampledates.json: samples.json sampledates.py MetaInfo/
 	python sampledates.py
 
@@ -29,6 +29,9 @@ filedates.pdf filedates.json: sampledates.json samples.json filedates.py \
 
 dates.json: sampledates.json filedates.json samples.json dates.py
 	python dates.py
+
+familydates.pdf: dates.json samples.json familydates.py familydates.r
+	python familydates.py
 
 todo.md5: sampledates.json filedates.json samples.json statsampler.py
 	python statsampler.py 1440
