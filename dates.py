@@ -10,47 +10,16 @@ with io.open('sampledates.json', 'rb') as exact:
 	dates = json.load(exact)
 with io.open('filedates.json', 'rb') as stats:
 	filedates = json.load(stats)
+with io.open('samples.json', 'rb') as infile:
+	ransomware = json.load(infile)
 
 total_stdev = 0
-for basename in ['ransomware', 'families']:
-	with io.open(basename + '.md5', 'rb') as infile:
-		for line in infile:
-			hash = line[0:32]
-			file = line[34:].rstrip()
-			if hash not in dates or dates[hash] is None:
-				dates[hash] = filedates[file]['mean']
-				total_stdev += filedates[file]['stdev']
+for hash, data in ransomware.items():
+	if hash not in dates or dates[hash] is None:
+		file = data['file']
+		dates[hash] = filedates[file]['mean']
+		total_stdev += filedates[file]['stdev']
 
 with io.open('dates.json', 'wb') as outfile:
 	json.dump(dates, outfile)
 print 'total stdev', total_stdev / 86400 / 365, 'years'
-
-samples = dict()
-with io.open('families.labels', 'rb') as infile:
-	for line in infile:
-		hash = line[0:32]
-		family = line[33:].rstrip()
-		if not family.startswith('SINGLETON:'):
-			if family not in samples:
-				samples[family] = []
-			samples[family].append(hash)
-# use ransomware.labels only to add additional samples, not to define families.
-with io.open('ransomware.labels', 'rb') as infile:
-	for line in infile:
-		hash = line[0:32]
-		family = line[33:].rstrip()
-		if family in samples:
-			samples[family].append(hash)
-print len(samples), 'families'
-
-families = sorted(samples.keys(), key=lambda family: mean([dates[hash] for hash in samples[family]]))
-with io.open('familydates.tmp', 'wb') as dataset:
-	dataset.write('rank,family,date\n')
-	rank = 0
-	for family in families:
-		for hash in samples[family]:
-			if len(samples[family]) > 3:
-				dataset.write(str(rank) + ',' + family + ',' + str(date.fromtimestamp(dates[hash])) + '\n')
-		rank += 1
-os.system('R --vanilla --slave -f familydates.r')
-os.remove('familydates.tmp')

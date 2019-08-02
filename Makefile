@@ -1,4 +1,4 @@
-all: dates.json popular-ransomware.pdf
+all: dates.json ransomware-families.pdf
 
 ransomware/%.jsons.gz: filter1.py families.md Raw/%.ldjson.tar.gz \
 		vxshare-filetypes/%.zip.file.json.gz
@@ -11,32 +11,29 @@ ransomware.jsons: $(foreach id,$(wildcard Raw/*.ldjson.tar.gz), \
 ransomware.labels: ransomware.jsons avclass/avclass_labeler.py
 	python avclass/avclass_labeler.py -vt ransomware.jsons >$@
 
-ransomware.md5: ransomware.labels ransomware.jsons
-	python filter2.py ransomware
+samples.json: filter2.py ransomware.labels ransomware.jsons
+	python filter2.py
 
-popular-ransomware.pdf ransomware-family-distribution.pdf: ransomware.labels \
-		barplot.py
+ransomware-families.pdf: samples.json barplot.py
 	python barplot.py
 
 # deliberately using the MetaInfo directory itself as prerequisite. declaring
 # all files takes almost 1min just for make to list the files. directory mtime
 # changes whenever a file is added, and files are never modified anyway.
-sampledates.json: ransomware.md5 sampledates.py MetaInfo/
+sampledates.json: samples.json sampledates.py MetaInfo/
 	python sampledates.py
 
-filedates.pdf filedates.json: sampledates.json ransomware.md5 filedates.py \
+filedates.pdf filedates.json: sampledates.json samples.json filedates.py \
 		filedates.r
 	python filedates.py
 
-dates.json familydates.pdf: sampledates.json filedates.json ransomware.md5 \
-		dates.py familydates.r
+dates.json: sampledates.json filedates.json samples.json dates.py
 	python dates.py
 
-todo.md5: sampledates.json sampledates.json filedates.json ransomware.md5 \
-		statsampler.py
+todo.md5: sampledates.json filedates.json samples.json statsampler.py
 	python statsampler.py 1440
 
-# these files take about 1 hour to build. ransomware.jsons is about 3.5GB.
+# these files take about 1 hour to build. ransomware.jsons is around 1.1GB.
 # .PRECIOUS makes sure make doesn't accidentally delete any of them.
 .PRECIOUS: ransomware/*.jsons.gz ransomware.jsons ransomware.labels \
 	families.md5 ransomware.md5

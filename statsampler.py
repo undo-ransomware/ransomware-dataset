@@ -13,37 +13,48 @@ with io.open('sampledates.json', 'rb') as cache:
 	dates = json.load(cache)
 with io.open('filedates.json', 'rb') as cache:
 	stats = json.load(cache)
+with io.open('samples.json', 'rb') as infile:
+	ransomware = json.load(infile)
 
-unknown = dict()
-with io.open('families.md5', 'rb') as infile:
-	for line in infile:
-		hash = line[0:32]
-		file = line[34:].rstrip()
-		if hash not in dates:
-			if file not in unknown:
-				unknown[file] = []
-			unknown[file].append(hash)
+def append(groups, group, item, stdev):
+	if group not in groups:
+		groups[group] = { 'stdev': 0, 'items': [] }
+	groups[group]['items'].append(item)
+	groups[group]['stdev'] += stdev
 
 INFINITY = 1e9
-score = dict()
-total_stdev = 0
-for file in unknown.keys():
+families = dict()
+labeled = dict()
+for hash, data in ransomware.items():
+	if hash in dates:
+		continue
+	file = data['file']
 	stdev = stats[file]['stdev']
 	if stdev > INFINITY:
 		stdev = INFINITY
-	score[file] = stdev * len(unknown[file])
-	total_stdev += score[file]
+	if len(data['families']) > 0:
+		for family in data['families']:
+			append(families, family, hash, stdev)
+	else:
+		append(labeled, file, hash, stdev)
 
-with io.open('todo.md5', 'wb') as todo:
-	count = int(sys.argv[1])
-	for file in sorted(unknown.keys(), key=lambda file: -score[file]):
+def sample(grouped, count, todo):
+	total_score = sum(data['stdev'] for data in grouped.values())
+	for group in sorted(grouped, key=lambda group: -grouped[group]['stdev']):
 		# ceil() so we have a chance to spot files where the known samples
 		# suggest a really low stdev, but the file itself actually has a high
 		# stdev nevertheless.
-		n = min(int(ceil(count * score[file] / total_stdev)), len(unknown[file]))
+		unknown = grouped[group]['items']
+		score = grouped[group]['stdev']
+		n = min(int(ceil(count * score / total_score)), len(unknown))
 		for i in range(n):
-			index = random.randrange(len(unknown[file]))
-			hash = unknown[file].pop(index)
-			todo.write(hash + '  ' + file + '\n')
+			index = random.randrange(len(unknown))
+			hash = unknown.pop(index)
+			todo.write(hash + '  ' + group + '\n')
 		if n > 0:
-			print file, n, score[file]
+			print group, n, score
+
+with io.open('todo.md5', 'wb') as todo:
+	count = int(sys.argv[1])
+	sample(families, count, todo)
+	sample(labeled, count, todo)

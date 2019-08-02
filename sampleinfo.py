@@ -11,13 +11,8 @@ with io.open('sampledates.json', 'rb') as cache:
 	dates = json.load(cache)
 with io.open('filedates.json', 'rb') as cache:
 	filedates = json.load(cache)
-
-ransomware = dict()
-with io.open('ransomware.md5', 'rb') as infile:
-	for line in infile:
-		hash = line[0:32]
-		file = line[34:].rstrip()
-		ransomware[hash] = file
+with io.open('samples.json', 'rb') as cache:
+	ransomware = json.load(cache)
 
 fam = dict()
 with io.open('ransomware.labels', 'rb') as infile:
@@ -27,12 +22,16 @@ with io.open('ransomware.labels', 'rb') as infile:
 		fam[hash] = family
 
 def family(hash):
-	return fam[hash] if hash in fam else '???'
+	return ' '.join(ransomware[hash]['families'])
+
+def label(hash):
+	lab = ransomware[hash]['label']
+	return lab if lab is not None else '???'
 
 def dateinfo(hash):
 	if hash in dates:
 		return str(date.fromtimestamp(dates[hash]))
-	stats = filedates[ransomware[hash]]
+	stats = filedates[ransomware[hash]['file']]
 	stdev = stats['stdev'] / 86400
 	return str(date.fromtimestamp(stats['mean'])) + (' ±%.1f' % stdev) + ' days'
 
@@ -58,4 +57,4 @@ if len(sys.argv) > 1:
 else:
 	scan(sys.stdin, selected)
 for hash in sorted(selected, key=family):
-	print hash, ransomware[hash], family(hash), dateinfo(hash)
+	print hash, family(hash), label(hash), dateinfo(hash)

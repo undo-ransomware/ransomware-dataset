@@ -10,26 +10,29 @@ if os.path.isfile('sampledates.json'):
 else:
 	dates = dict()
 
+with io.open('samples.json', 'rb') as infile:
+	ransomware = json.load(infile)
 index = 0
-for basename in ['ransomware', 'families']:
-	with io.open(basename + '.md5', 'rb') as infile:
-		for line in infile:
-			hash = line[0:32]
-			if hash not in dates:
-				metafile ='MetaInfo/' + hash + '.json'
-				if os.path.isfile(metafile):
-					with open(metafile, 'r') as meta:
-						data = ast.literal_eval(meta.readline())
-						attrs = data['data']['attributes']
-						if 'first_submission_date' in attrs:
-							dates[hash] = int(attrs['first_submission_date'])
-						else:
-							dates[hash] = None
-		
-			index += 1
-			if index % 1000 == 0:
-				sys.stderr.write('\r' + str(index / 1000) + 'k  ')
-				sys.stderr.flush()
+for hash, data in ransomware.items():
+	if hash not in dates:
+		metafile ='MetaInfo/' + hash + '.json'
+		if os.path.isfile(metafile):
+			with open(metafile, 'r') as meta:
+				try:
+					data = ast.literal_eval(meta.readline())
+				except Exception:
+					print 'crash parsing', hash
+					raise
+				attrs = data['data']['attributes']
+				if 'first_submission_date' in attrs:
+					dates[hash] = int(attrs['first_submission_date'])
+				else:
+					dates[hash] = None
+
+	index += 1
+	if index % 1000 == 0:
+		sys.stderr.write('\r' + str(index / 1000) + 'k  ')
+		sys.stderr.flush()
 sys.stderr.write('\r' + str(index) + '\n')
 
 with io.open('sampledates.json', 'wb') as outfile:
