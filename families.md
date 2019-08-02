@@ -54,6 +54,7 @@ this file! First column must be the family names.
 | Fakben            | TBD            |
 | Fantom            | TBD            |
 | Fsociety          | TBD            |
+| GandCrab          | TBD            |
 | Ginx              | TBD            |
 | ~~Globe~~         | TBD            |
 | Gomasom           | TBD            |
@@ -191,7 +192,9 @@ the first 3 criteria. The families are then filtered manually.
   are families of lock-the-desktop type programs with scary police-themes messages.
 - [VirLock](https://www.symantec.com/security-center/writeup/2014-120915-3319-99)
   has an incredibly huge number of samples, but that's fully expected for a
-  fully polymorphic virus.
+  fully polymorphic virus. Left in the sample, though sharing the encrypted
+  files is expected to be problematic when each of them contains a copy of the
+  malware...
 
 Some lock-the-desktop ransomware might encrypt files, but finding the single instance
 that does that in several 10k samples is impractical.
@@ -426,6 +429,7 @@ https://doi.org/10.1109/ICDCS.2016.46
 
 # Other
 
-| Name       | Source                    |
-|------------|---------------------------|
-| Sodinokibi | https://heise.de/-4483691 |
+| Name       | Source                                                                    |
+|------------|---------------------------------------------------------------------------|
+| GandCrab   | https://www.hornetsecurity.com/de/security-informationen/gandcrab-analyse |
+| Sodinokibi | https://heise.de/-4483691                                                 |

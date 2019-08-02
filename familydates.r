@@ -3,12 +3,12 @@ data = read.csv('familydates2.tmp')
 data$date = as.Date(data$date)
 
 pdf('familydates.pdf', 12, 8)
-plot(c(3, max(labels$rank) - 2), c(as.Date('2008-07-31'), as.Date('2019-02-01')),
+plot(c(3, max(labels$rank) - 2), c(as.Date('2007-07-31'), as.Date('2019-02-01')),
 	pch='', xaxt='n', yaxt='n', xlab=NA,
 	ylab='first submission date on VirusTotal',
 	main='known ransomware: estimated submission time by family')
 
-years = 2007:2019
+years = 2006:2019
 axis(2, as.Date(paste(years,'-06-30', sep='')), labels=years,
 	tick=F, las=1, line=F)
 axis(2, as.Date(paste(years,'-01-01', sep='')), labels=F)
