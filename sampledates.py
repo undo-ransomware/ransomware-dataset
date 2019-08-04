@@ -31,9 +31,9 @@ for hash, data in ransomware.items():
 
 	index += 1
 	if index % 1000 == 0:
-		sys.stderr.write('\r' + str(index / 1000) + 'k  ')
+		sys.stderr.write('\r%dk  ' % (index / 1000))
 		sys.stderr.flush()
-sys.stderr.write('\r' + str(index) + '\n')
+sys.stderr.write('\r%d / %d  \n' % (len(dates), index))
 
 with io.open('sampledates.json', 'wb') as outfile:
 	json.dump(dates, outfile)

@@ -14,13 +14,6 @@ with io.open('filedates.json', 'rb') as cache:
 with io.open('samples.json', 'rb') as cache:
 	ransomware = json.load(cache)
 
-fam = dict()
-with io.open('ransomware.labels', 'rb') as infile:
-	for line in infile:
-		hash = line[0:32]
-		family = line[33:].rstrip()
-		fam[hash] = family
-
 def family(hash):
 	return ' '.join(ransomware[hash]['families'])
 
