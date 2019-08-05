@@ -17,6 +17,9 @@ with io.open('sampledates.json', 'rb') as cache:
 with io.open('dates.json', 'rb') as cache:
 	for hash, ts in json.load(cache).items():
 		ransomware[hash]['date'] = ts
+with io.open('sha256.json', 'rb') as cache:
+	for hash, sha256 in json.load(cache).items():
+		ransomware[hash]['sha256'] = sha256
 
 available = dict()
 if os.path.isfile('index.md5'):
@@ -78,17 +81,19 @@ def dateinfo(meta):
 		return '~' + dt
 	return dt
 
-with io.open('suggested.md5', 'wb') as todo:
+with io.open('suggested.md5', 'wb') as todo, io.open('download.md5', 'wb') as dl:
 	for family, samples in sorted(families.items()):
 		hashes = sorted(samples, key=score(family), reverse=True)
 		n = num - done[family]
 		if n <= 0:
 			continue
 		for hash in hashes[0:n]:
-			path = available[hash] if hash in available else ''
 			meta = ransomware[hash]
 			fams = ' '.join(meta['families'])
 			label = ('`' + meta['label'] + '`') if meta['label'] is not None else 'missing'
 			print '| TODO     | `%32s` | %-23s | %-17s | %-11s | `drop`     | 600     | TBD       |' % (
 					hash, family, label, dateinfo(meta))
-			todo.write('%s  %s\n' % (hash, path))
+			if hash in available:
+				todo.write('%s  %s\n' % (hash, available[hash]))
+			else:
+				dl.write('%s  https://virusshare.com/download.4n6?sample=%s\n' % (hash, meta['sha256']))

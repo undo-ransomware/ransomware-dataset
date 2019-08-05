@@ -18,6 +18,7 @@ sys.stderr.write(str(len(labels)) + ' non-singleton samples\n')
 # ransomware.md5 just lists the hashes, and sample source files. because it is
 # much smaller, processing it is orders of magnitude faster.
 meta = dict()
+sha256 = dict()
 with io.open('ransomware.jsons', 'rb') as ransom:
 	index = 0
 	selected = 0
@@ -30,6 +31,7 @@ with io.open('ransomware.jsons', 'rb') as ransom:
 			obj['label'] = labels[hash] if hash in labels else None
 			meta[hash] = obj
 			selected += 1
+			sha256[hash] = data['sha256']
 
 		index += 1
 		if index % 1000 == 0:
@@ -39,3 +41,5 @@ sys.stderr.write('\r' + str(selected) + ' / ' + str(index) + '\n')
 
 with io.open('samples.json', 'wb') as out:
 	json.dump(meta, out)
+with io.open('sha256.json', 'wb') as out:
+	json.dump(sha256, out)
