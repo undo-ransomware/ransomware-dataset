@@ -11,7 +11,7 @@ ransomware.jsons: $(foreach id,$(wildcard Raw/*.ldjson.tar.gz), \
 ransomware.labels: ransomware.jsons avclass/avclass_labeler.py
 	python avclass/avclass_labeler.py -vt ransomware.jsons >$@
 
-samples.json: filter2.py ransomware.labels ransomware.jsons
+samples.json sha256.json: filter2.py ransomware.labels ransomware.jsons
 	python filter2.py
 
 ransomware-families.pdf: samples.json barplot.py

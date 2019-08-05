@@ -11,4 +11,5 @@ cat "$@" | while read hash _; do
 		python /home/matthias/ransomware/VirusTotalApi/vt/vt.py -s -j --allinfo $hash >$METAINFO/$hash.json
 		sleep 10
 	fi
+	mv VTDL_*.json vtdl
 done
